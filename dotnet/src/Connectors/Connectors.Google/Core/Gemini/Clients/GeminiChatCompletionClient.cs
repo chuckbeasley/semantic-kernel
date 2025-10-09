@@ -149,6 +149,38 @@ internal sealed class GeminiChatCompletionClient : ClientBase
     }
 
     /// <summary>
+    /// Represents a client for interacting with the chat completion Gemini model via Azure APIM.
+    /// </summary>
+    /// <param name="httpClient">HttpClient instance used to send HTTP requests</param>
+    /// <param name="endpoint">The Azure APIM endpoint to process the request</param>"
+    /// <param name="modelId">Id of the model supporting chat completion</param>
+    /// <param name="apiKey">Api key for GoogleAI endpoint</param>
+    /// <param name="apiVersion">Version of the Google API</param>
+    /// <param name="logger">Logger instance used for logging (optional)</param>
+    public GeminiChatCompletionClient(
+        HttpClient httpClient,
+        string endpoint,
+        string modelId,
+        string apiKey,
+        GoogleAIVersion apiVersion,
+        ILogger? logger = null)
+        : base(
+            httpClient: httpClient,
+            logger: logger,
+            apiKey: apiKey)
+    {
+        Verify.NotNullOrWhiteSpace(endpoint);
+        Verify.NotNullOrWhiteSpace(modelId);
+        Verify.NotNullOrWhiteSpace(apiKey);
+
+        string versionSubLink = GetApiVersionSubLink(apiVersion);
+
+        this._modelId = modelId;
+        this._chatGenerationEndpoint = new Uri(endpoint);
+        this._chatStreamingEndpoint = new Uri(endpoint);
+    }
+
+    /// <summary>
     /// Generates a chat message asynchronously.
     /// </summary>
     /// <param name="chatHistory">The chat history containing the conversation data.</param>

@@ -585,6 +585,60 @@ public sealed class GeminiChatGenerationTests : IDisposable
         Assert.Null(exception);
     }
 
+    [Fact]
+    public async Task ItUsesProvidedEndpointAsRequestUriAsync()
+    {
+        // Arrange
+        string endpoint = "https://my-apim.azure-api.net/custom/generate";
+        var client = new GeminiChatCompletionClient(
+            httpClient: this._httpClient,
+            endpoint: endpoint,
+            modelId: "my-model",
+            apiKey: "fake-key",
+            apiVersion: GoogleAIVersion.V1);
+        var chatHistory = CreateSampleChatHistory();
+
+        // Act
+        await client.GenerateChatMessageAsync(chatHistory);
+
+        // Assert
+        Assert.NotNull(this._messageHandlerStub.RequestUri);
+        Assert.Equal(endpoint, this._messageHandlerStub.RequestUri.ToString());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ConstructorThrowsOnInvalidEndpoint(string? endpoint)
+    {
+        // Arrange & Act & Assert
+        if (endpoint is null)
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                _ = new GeminiChatCompletionClient(
+                    httpClient: this._httpClient,
+                    endpoint: endpoint!,
+                    modelId: "model",
+                    apiKey: "fake-key",
+                    apiVersion: GoogleAIVersion.V1);
+            });
+        }
+        else
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                _ = new GeminiChatCompletionClient(
+                    httpClient: this._httpClient,
+                    endpoint: endpoint,
+                    modelId: "model",
+                    apiKey: "fake-key",
+                    apiVersion: GoogleAIVersion.V1);
+            });
+        }
+    }
+
     private sealed class BearerTokenGenerator()
     {
         private int _index = 0;
@@ -606,6 +660,7 @@ public sealed class GeminiChatGenerationTests : IDisposable
         string modelId = "fake-model",
         string? bearerKey = null,
         HttpClient? httpClient = null,
+        string? endpoint = null,
         ILogger? logger = null)
     {
         if (bearerKey is not null)
@@ -617,6 +672,17 @@ public sealed class GeminiChatGenerationTests : IDisposable
                 bearerTokenProvider: () => new ValueTask<string>(bearerKey),
                 location: "fake-location",
                 projectId: "fake-project-id",
+                logger: logger);
+        }
+
+        if (endpoint is not null)
+        {
+            return new GeminiChatCompletionClient(
+                httpClient: httpClient ?? this._httpClient,
+                endpoint: endpoint,
+                modelId: modelId,
+                apiVersion: GoogleAIVersion.V1,
+                apiKey: "fake-key",
                 logger: logger);
         }
 
