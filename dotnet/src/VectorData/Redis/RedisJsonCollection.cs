@@ -97,9 +97,9 @@ public class RedisJsonCollection<TKey, TRecord> : VectorStoreCollection<TKey, TR
         Verify.NotNull(database);
         Verify.NotNullOrWhiteSpace(name);
 
-        if (typeof(TKey) != typeof(string) && typeof(TKey) != typeof(object))
+        if (typeof(TKey) != typeof(string) && typeof(TKey) != typeof(Guid) && typeof(TKey) != typeof(object))
         {
-            throw new NotSupportedException("Only string keys are supported.");
+            throw new NotSupportedException("Only string or Guid keys are supported.");
         }
 
         var isDynamic = typeof(TRecord) == typeof(Dictionary<string, object?>);
@@ -284,7 +284,8 @@ public class RedisJsonCollection<TKey, TRecord> : VectorStoreCollection<TKey, TR
         var keysList = keys switch
         {
             IEnumerable<string> k => k.ToList(),
-            IEnumerable<object> k => k.Cast<string>().ToList(),
+            IEnumerable<Guid> k => k.Select(x => x.ToString()).ToList(),
+            IEnumerable<object> k => k.Select(x => x.ToString()!).ToList(),
             _ => throw new UnreachableException()
         };
 #pragma warning restore CA1851 // Possible multiple enumerations of 'IEnumerable' collection
@@ -596,7 +597,13 @@ public class RedisJsonCollection<TKey, TRecord> : VectorStoreCollection<TKey, TR
     {
         Verify.NotNull(key);
 
-        var stringKey = key as string ?? throw new UnreachableException("string key should have been validated during model building");
+        var stringKey = key switch
+        {
+            string s => s,
+            Guid g => g.ToString(),
+
+            _ => throw new UnreachableException("string key should have been validated during model building")
+        };
 
         Verify.NotNullOrWhiteSpace(stringKey, nameof(key));
 

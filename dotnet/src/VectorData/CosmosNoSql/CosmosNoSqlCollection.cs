@@ -134,9 +134,12 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     {
         try
         {
-            if (typeof(TKey) != typeof(string) && typeof(TKey) != typeof(CosmosNoSqlCompositeKey) && typeof(TKey) != typeof(object))
+            if (typeof(TKey) != typeof(string)
+                && typeof(TKey) != typeof(Guid)
+                && typeof(TKey) != typeof(CosmosNoSqlCompositeKey)
+                && typeof(TKey) != typeof(object))
             {
-                throw new NotSupportedException($"Only {nameof(String)} and {nameof(CosmosNoSqlCompositeKey)} keys are supported.");
+                throw new NotSupportedException($"Only string, Guid and {nameof(CosmosNoSqlCompositeKey)} keys are supported.");
             }
 
             this._database = databaseProvider(clientWrapper.Client);
@@ -770,21 +773,14 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     /// More information about Azure CosmosDB NoSQL distance functions here: <see href="https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/vector-search#container-vector-policies" />.
     /// </summary>
     private static DistanceFunction GetDistanceFunction(string? distanceFunction, string vectorPropertyName)
-    {
-        if (string.IsNullOrWhiteSpace(distanceFunction))
+        => distanceFunction switch
         {
-            // Use default distance function.
-            return DistanceFunction.Cosine;
-        }
-
-        return distanceFunction switch
-        {
-            SKDistanceFunction.CosineSimilarity => DistanceFunction.Cosine,
+            SKDistanceFunction.CosineSimilarity or null => DistanceFunction.Cosine,
             SKDistanceFunction.DotProductSimilarity => DistanceFunction.DotProduct,
             SKDistanceFunction.EuclideanDistance => DistanceFunction.Euclidean,
-            _ => throw new InvalidOperationException($"Distance function '{distanceFunction}' for {nameof(VectorStoreVectorProperty)} '{vectorPropertyName}' is not supported by the Azure CosmosDB NoSQL VectorStore.")
+
+            _ => throw new NotSupportedException($"Distance function '{distanceFunction}' for {nameof(VectorStoreVectorProperty)} '{vectorPropertyName}' is not supported by the Azure CosmosDB NoSQL VectorStore.")
         };
-    }
 
     /// <summary>
     /// Returns <see cref="VectorDataType"/> based on vector property type.
@@ -852,13 +848,24 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
         => keys switch
         {
             IEnumerable<CosmosNoSqlCompositeKey> k => k,
+
             IEnumerable<string> k => k.Select(key => new CosmosNoSqlCompositeKey(recordKey: key, partitionKey: key)),
+
+            IEnumerable<Guid> k => k.Select(key =>
+            {
+                var guidString = key.ToString();
+                return new CosmosNoSqlCompositeKey(recordKey: guidString, partitionKey: guidString);
+            }),
+
             IEnumerable<object> k => k.Select(key => key switch
             {
                 string s => new CosmosNoSqlCompositeKey(recordKey: s, partitionKey: s),
+                Guid g when g.ToString() is var guidString => new CosmosNoSqlCompositeKey(recordKey: guidString, partitionKey: guidString),
                 CosmosNoSqlCompositeKey ck => ck,
+
                 _ => throw new ArgumentException($"Invalid key type '{key.GetType().Name}'.")
             }),
+
             _ => throw new UnreachableException()
         };
 

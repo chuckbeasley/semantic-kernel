@@ -37,7 +37,7 @@ dependencies = [
     "numpy >= 1.25.0; python_version < '3.12'",
     "numpy >= 1.26.0; python_version >= '3.12'",
     # openai connector
-    "openai >= 1.98.0, < 2.0.0",
+    "openai >= 1.98.0,<2",
     # openapi and swagger
     "openapi_core >= 0.18,<0.20",
     "websockets >= 13, < 16",
@@ -92,7 +92,7 @@ faiss = [
     "faiss-cpu>=1.10.0"
 ]
 google = [
-    "google-cloud-aiplatform == 1.97.0",
+    "google-cloud-aiplatform ~= 1.114.0",
     "google-generativeai ~= 0.8"
 ]
 hugging_face = [
@@ -154,7 +154,7 @@ usearch = [
     "pyarrow >= 12.0,< 22.0"
 ]
 weaviate = [
-    "weaviate-client>=4.10,<5.0,!=4.16.7",
+    "weaviate-client>=4.17.0,<5.0",
 ]
 
 [tool.uv]
