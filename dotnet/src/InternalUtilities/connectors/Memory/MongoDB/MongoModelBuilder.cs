@@ -23,7 +23,6 @@ internal class MongoModelBuilder() : CollectionModelBuilder(s_validationOptions)
     private static readonly CollectionModelBuildingOptions s_validationOptions = new()
     {
         RequiresAtLeastOneVector = false,
-        SupportsMultipleKeys = false,
         SupportsMultipleVectors = true,
         UsesExternalSerializer = true,
     };
@@ -58,7 +57,11 @@ internal class MongoModelBuilder() : CollectionModelBuilder(s_validationOptions)
 
     protected override bool IsDataPropertyTypeValid(Type type, [NotNullWhen(false)] out string? supportedTypes)
     {
-        supportedTypes = "string, int, long, double, float, bool, DateTimeOffset, or arrays/lists of these types";
+        supportedTypes = "string, int, long, double, float, bool, decimal, DateTime, DateTimeOffset,"
+#if NET
+            + " DateOnly,"
+#endif
+            + " or arrays/lists of these types";
 
         if (Nullable.GetUnderlyingType(type) is Type underlyingType)
         {
@@ -77,7 +80,12 @@ internal class MongoModelBuilder() : CollectionModelBuilder(s_validationOptions)
                 type == typeof(float) ||
                 type == typeof(double) ||
                 type == typeof(decimal) ||
-                type == typeof(DateTime);
+                type == typeof(DateTime) ||
+                type == typeof(DateTimeOffset) ||
+#if NET
+                type == typeof(DateOnly) ||
+#endif
+                false;
     }
 
     protected override bool IsVectorPropertyTypeValid(Type type, [NotNullWhen(false)] out string? supportedTypes)
