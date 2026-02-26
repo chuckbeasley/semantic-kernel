@@ -41,7 +41,7 @@ public class PostgresCollection<TKey, TRecord> : VectorStoreCollection<TKey, TRe
     private readonly string _databaseName;
 
     /// <summary>The database schema.</summary>
-    private readonly string _schema;
+    private readonly string? _schema;
 
     /// <summary>The model for this collection.</summary>
     private readonly CollectionModel _model;
@@ -92,7 +92,7 @@ public class PostgresCollection<TKey, TRecord> : VectorStoreCollection<TKey, TRe
             name,
             static options => typeof(TRecord) == typeof(Dictionary<string, object?>)
                 ? throw new NotSupportedException(VectorDataStrings.NonDynamicCollectionWithDictionaryNotSupported(typeof(PostgresDynamicCollection)))
-                : new PostgresModelBuilder().Build(typeof(TRecord), options.Definition, options.EmbeddingGenerator),
+                : new PostgresModelBuilder().Build(typeof(TRecord), typeof(TKey), options.Definition, options.EmbeddingGenerator),
             options)
     {
     }
